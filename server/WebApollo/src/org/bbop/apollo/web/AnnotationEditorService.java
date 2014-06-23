@@ -332,6 +332,7 @@ public class AnnotationEditorService extends HttpServlet {
                 }
                 AbstractDataStore dataStore = updateDataStore ? sessionData.getDataStore() : null;
                 AbstractHistoryStore historyStore = updateDataStore ? sessionData.getHistoryStore() : null;
+                AbstractDataStore deletedStore = updateDataStore ? sessionData.getDeletedStore() : null;
 
                 if (!operationsNotRequiringMutexes.contains(operation)) {
 
@@ -384,7 +385,7 @@ public class AnnotationEditorService extends HttpServlet {
                             if ((permission & Permission.WRITE) == 0) {
                                 throw new AnnotationEditorServiceException("You do not have editing permissions");
                             }
-                            deleteFeature(editor, dataStore, historyStore, json.getJSONArray("features"), track, username, out);
+                            deleteFeature(editor, dataStore, historyStore, deletedStore, json.getJSONArray("features"), track, username, out);
                         }
 
                         // get_features
@@ -1054,11 +1055,11 @@ public class AnnotationEditorService extends HttpServlet {
         }
     }
 
-    private void deleteFeature(AnnotationEditor editor, AbstractDataStore dataStore, AbstractHistoryStore historyStore, JSONArray features, String track, String username, BufferedWriter out) throws JSONException, IOException, AnnotationEditorServiceException {
-        deleteFeature(editor, dataStore, historyStore, features, track, username, out, true);
+    private void deleteFeature(AnnotationEditor editor, AbstractDataStore dataStore, AbstractHistoryStore historyStore, AbstractDataStore deletedStore, JSONArray features, String track, String username, BufferedWriter out) throws JSONException, IOException, AnnotationEditorServiceException {
+        deleteFeature(editor, dataStore, historyStore, deletedStore, features, track, username, out, true);
     }
 
-    private void deleteFeature(AnnotationEditor editor, AbstractDataStore dataStore, AbstractHistoryStore historyStore, JSONArray features, String track, String username, BufferedWriter out, boolean fireUpdateChange) throws JSONException, IOException, AnnotationEditorServiceException {
+    private void deleteFeature(AnnotationEditor editor, AbstractDataStore dataStore, AbstractHistoryStore historyStore, AbstractDataStore deletedStore, JSONArray features, String track, String username, BufferedWriter out, boolean fireUpdateChange) throws JSONException, IOException, AnnotationEditorServiceException {
         JSONObject featureContainer = createJSONFeatureContainer();
         Map<String, List<AbstractSingleLocationBioFeature>> modifiedFeaturesUniqueNames = new HashMap<String, List<AbstractSingleLocationBioFeature>>();
 
@@ -1260,7 +1261,7 @@ public class AnnotationEditorService extends HttpServlet {
                 }
             }
             catch (Exception e) {
-                deleteFeature(editor, dataStore, historyStore, featureContainer.getJSONArray("features"), track, username, out, false);
+                deleteFeature(editor, dataStore, historyStore, deletedStore, featureContainer.getJSONArray("features"), track, username, out, false);
                 e.printStackTrace();
                 throw new AnnotationEditorServiceException("Error writing transcript: " + e.getMessage(), e);
             }
@@ -2858,7 +2859,7 @@ public class AnnotationEditorService extends HttpServlet {
         return false;
     }
 
-    private void undo(AnnotationEditor editor, HttpSession session, AbstractDataStore dataStore, AbstractHistoryStore historyStore, JSONObject json, String track, BufferedWriter out, int count) throws JSONException, IOException, AnnotationEditorServiceException, AnnotationEditorException {
+    private void undo(AnnotationEditor editor, HttpSession session, AbstractDataStore dataStore, AbstractDataStore deletedStore, AbstractHistoryStore historyStore, JSONObject json, String track, BufferedWriter out, int count) throws JSONException, IOException, AnnotationEditorServiceException, AnnotationEditorException {
         JSONArray features = json.getJSONArray("features");
         for (int i = 0; i< features.length(); ++i) {
             JSONObject jsonFeature = features.getJSONObject(i);
@@ -2879,7 +2880,7 @@ public class AnnotationEditorService extends HttpServlet {
                 }
                 JSONArray jsonFeatures = new JSONArray();
                 jsonFeatures.put(new JSONObject().put("uniquename", uniqueName));
-                deleteFeature(editor, dataStore, historyStore, jsonFeatures, track, null, out);
+                deleteFeature(editor, dataStore, historyStore, deletedStore, jsonFeatures, track, null, out);
             }
             else if (transaction.getOperation().equals(Transaction.Operation.DELETE_FEATURE)) {
                 JSONArray jsonFeatures = new JSONArray();
@@ -2898,7 +2899,7 @@ public class AnnotationEditorService extends HttpServlet {
                 for (AbstractSingleLocationBioFeature transcript : transaction.getNewFeatures()) {
                     jsonFeatures.put(JSONUtil.convertBioFeatureToJSON((transcript)));
                 }
-                deleteFeature(editor, dataStore, historyStore, jsonFeatures, track, null, out);
+                deleteFeature(editor, dataStore, historyStore, deletedStore, jsonFeatures, track, null, out);
             }
             else if (transaction.getOperation().equals(Transaction.Operation.DELETE_TRANSCRIPT)) {
                 JSONArray jsonFeatures = new JSONArray();
@@ -3399,7 +3400,7 @@ public class AnnotationEditorService extends HttpServlet {
         }
     }
 
-    private void redo(AnnotationEditor editor, HttpSession session, AbstractDataStore dataStore, AbstractHistoryStore historyStore, JSONArray features, String track, String username, BufferedWriter out, int count) throws JSONException, IOException, AnnotationEditorServiceException, AnnotationEditorException {
+    private void redo(AnnotationEditor editor, HttpSession session, AbstractDataStore dataStore, AbstractHistoryStore historyStore, AbstractDataStore deletedStore, JSONArray features, String track, String username, BufferedWriter out, int count) throws JSONException, IOException, AnnotationEditorServiceException, AnnotationEditorException {
         for (int i = 0; i< features.length(); ++i) {
             JSONObject jsonFeature = features.getJSONObject(i);
             String uniqueName = jsonFeature.getString("uniquename");
@@ -3423,7 +3424,7 @@ public class AnnotationEditorService extends HttpServlet {
             else if (transaction.getOperation().equals(Transaction.Operation.DELETE_FEATURE)) {
                 JSONArray jsonFeatures = new JSONArray();
                 jsonFeatures.put(new JSONObject().put("uniquename", uniqueName));
-                deleteFeature(editor, dataStore, null, jsonFeatures, track, null, out);
+                deleteFeature(editor, dataStore, null, deletedStore, jsonFeatures, track, null, out);
             }
             else if (transaction.getOperation().equals(Transaction.Operation.ADD_EXON)) {
                 for (AbstractSingleLocationBioFeature feature : transaction.getNewFeatures()) {
@@ -3435,7 +3436,7 @@ public class AnnotationEditorService extends HttpServlet {
                 for (AbstractSingleLocationBioFeature exon : transaction.getOldFeatures()) {
                     jsonFeatures.put(JSONUtil.convertBioFeatureToJSON((exon)));
                 }
-                deleteFeature(editor, dataStore, null, jsonFeatures, track, null, out);
+                deleteFeature(editor, dataStore, null, deletedStore, jsonFeatures, track, null, out);
             }
             else if (transaction.getOperation().equals(Transaction.Operation.MERGE_EXONS)) {
                 for (AbstractSingleLocationBioFeature feature : transaction.getNewFeatures()) {
@@ -3988,13 +3989,14 @@ public class AnnotationEditorService extends HttpServlet {
         editor.getSession().endTransactionForAllFeatures();
     }
 
-    private void deleteFeatureFromStore(AbstractDataStore dataStore, AbstractSingleLocationBioFeature feature) {
+    private void deleteFeatureFromStore(AbstractDataStore dataStore, AbstractDataStore deletedStore, AbstractSingleLocationBioFeature feature) {
         SimpleObjectIteratorInterface iterator = feature.getWriteableSimpleObjects(feature.getConfiguration());
         Feature gsolFeature = (Feature)iterator.next();
         if (feature instanceof SequenceAlteration) {
             dataStore.deleteSequenceAlteration(gsolFeature);
         }
         else {
+            deletedStore.writeFeature(gsolFeature);
             dataStore.deleteFeature(gsolFeature);
         }
     }
@@ -4370,11 +4372,13 @@ public class AnnotationEditorService extends HttpServlet {
         private AnnotationEditor editor;
         private AbstractDataStore dataStore;
         private AbstractHistoryStore historyStore;
+        private AbstractDataStore deletedStore;
 
-        public SessionData(AnnotationEditor editor, AbstractDataStore dataStore, AbstractHistoryStore historyStore) {
+        public SessionData(AnnotationEditor editor, AbstractDataStore dataStore, AbstractDataStore deletedStore, AbstractHistoryStore historyStore) {
             this.editor = editor;
             this.dataStore = dataStore;
             this.historyStore = historyStore;
+            this.deletedStore = deletedStore;
         }
 
         public AnnotationEditor getEditor() {
@@ -4387,6 +4391,10 @@ public class AnnotationEditorService extends HttpServlet {
 
         public AbstractHistoryStore getHistoryStore() {
             return historyStore;
+        }
+
+        public AbstractDataStore getDeletedStore() {
+            return deletedStore;
         }
 
     }

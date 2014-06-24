@@ -115,9 +115,7 @@ private String generateFeatureRecordJSON(AbstractSingleLocationBioFeature featur
     long left=Math.max(feature.getFmin()-flank,1);
     long right=Math.min(feature.getFmax()+flank,track.getSourceFeature().getSequenceLength()-1);
     
-
-    Transaction t=historyDataStore.getCurrentTransactionForFeature(feature.getUniqueName());
-    
+    Transaction t=(historyDataStore==null)?null:historyDataStore.getCurrentTransactionForFeature(feature.getUniqueName());
     
     builder+=String.format("['<input type=\"checkbox\" class=\"track_select\" id=\"%s\"/>',", track.getName());
     builder+=String.format("'%s',",track.getSourceFeature().getUniqueName());
@@ -125,23 +123,31 @@ private String generateFeatureRecordJSON(AbstractSingleLocationBioFeature featur
         track.getSourceFeature().getUniqueName(), left, right, feature.getName());
     builder+=String.format("'%s',", feature.getType().split(":")[1]);
     builder+=String.format("'%s',", feature.getTimeLastModified());
-    builder+=String.format("'%s',", t!=null?t.getEditor():"null");
+    builder+=String.format("'%s',", ((historyDataStore==null)  ? "here" : ((t!=null) ? t.getEditor():"null")));
     builder+=String.format("'%s']", feature.getOwner().getOwner());
     return builder;
 }
-
+private ArrayList<String> generateFeatureRecord(AbstractSingleLocationBioFeature feature, ServerConfiguration.TrackConfiguration track, JEHistoryDatabase historyDataStore) {
+    ArrayList<String> builder=new ArrayList<String>();
+    generateFeatureRecordHelper(builder,feature,track,historyDataStore);
+    return builder;
+}
 /** Generate a list of records for a feature that may include subfeatures
 *
 * @return non-empty ArrayList of Strings with records in JSON format
 */
-private ArrayList<String> generateFeatureRecord(AbstractSingleLocationBioFeature feature, ServerConfiguration.TrackConfiguration track, JEHistoryDatabase historyDataStore) {
-    ArrayList<String> builder=new ArrayList<String>();
+private void generateFeatureRecordHelper(ArrayList<String> builder, AbstractSingleLocationBioFeature feature, ServerConfiguration.TrackConfiguration track, JEHistoryDatabase historyDataStore) {
     String type=feature.getType().split(":")[1];
-    for (AbstractSingleLocationBioFeature subfeature : feature.getChildren()) {
-        builder.add(generateFeatureRecordJSON(subfeature,track, historyDataStore)); 
+    //if(feature.getChildren().size()>1) {
+    if(type.equals("gene")) {
+        for (AbstractSingleLocationBioFeature subfeature : feature.getChildren()) {
+            generateFeatureRecordHelper(builder,subfeature, track, historyDataStore);
+        }
+    
     }
+    //}
+    
     builder.add(generateFeatureRecordJSON(feature,track, historyDataStore));
-    return builder;
 }
 
 %>
@@ -173,6 +179,28 @@ if (username != null) {
             
             dataStore.readFeatures(features);
             for (Feature feature : features) {
+                // use list of records to get objects that have subfeatures
+                AbstractSingleLocationBioFeature gbolFeature=(AbstractSingleLocationBioFeature)BioObjectUtil.createBioObject(feature, bioObjectConfiguration);
+                ArrayList<String> record = generateFeatureRecord(gbolFeature, track, historyDataStore);
+                for (String s : record) {
+                    out.println("recent_changes.push(" + s + ");\n");
+                }
+            }
+            
+            
+            Collection<Feature> deleted_features = new ArrayList<Feature>();
+            String my_deleted_database = databaseDir + "/"+ track.getName()+"_deleted";
+
+            //check that database exists
+            File deleted_database = new File(my_deleted_database);
+            if (!deleted_database.exists()) {
+                continue;
+            }
+            JEDatabase deletedStore = new JEDatabase(my_deleted_database,false);
+            historyDataStore = null;
+            
+            deletedStore.readFeatures(deleted_features);
+            for (Feature feature : deleted_features) {
                 // use list of records to get objects that have subfeatures
                 AbstractSingleLocationBioFeature gbolFeature=(AbstractSingleLocationBioFeature)BioObjectUtil.createBioObject(feature, bioObjectConfiguration);
                 ArrayList<String> record = generateFeatureRecord(gbolFeature, track, historyDataStore);

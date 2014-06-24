@@ -1080,6 +1080,7 @@ public class AnnotationEditorService extends HttpServlet {
             AbstractSingleLocationBioFeature feature = editor.getSession().getFeatureByUniqueName(uniqueName);
             SimpleObjectIteratorInterface iterator = feature.getWriteableSimpleObjects(feature.getConfiguration());
             Feature gsolFeature = (Feature)iterator.next();
+
             if (!isUpdateOperation) {
                 featureContainer.getJSONArray("features").put(new JSONObject().put("uniquename", uniqueName));
 
@@ -1090,11 +1091,12 @@ public class AnnotationEditorService extends HttpServlet {
                     if (gene.getTranscripts().size() == 0) {
                         editor.deleteFeature(gene);
                     }
-                    if (dataStore != null) {
+                    if (dataStore != null && deletedStore != null) {
                         if (gene.getTranscripts().size() > 0) {
                             dataStore.writeFeature(gene);
                         }
                         else {
+                            deletedStore.writeFeature(gene);
                             dataStore.deleteFeature(gene);
                         }
                     }
@@ -1105,6 +1107,7 @@ public class AnnotationEditorService extends HttpServlet {
                 else {
                     editor.deleteFeature(feature);
                     if (dataStore != null) {
+                        deletedStore.writeFeature(gsolFeature);
                         dataStore.deleteFeature(gsolFeature);
                     }
 
@@ -3910,6 +3913,9 @@ public class AnnotationEditorService extends HttpServlet {
         AnnotationEditor editor = trackToEditor.get(track);
         if (editor == null) {
             AbstractDataStore dataStore = new JEDatabase(getStorageFile(track).getAbsolutePath());
+            AbstractDataStore deletedStore = new JEDatabase(getStorageFile(track+"_deleted").getAbsolutePath());
+            AbstractHistoryStore historyStore = new JEHistoryDatabase(getStorageFile(track + "_history").getAbsolutePath(), false, historySize);
+
             DataStore sessionDataStore = useMemoryStore ?
                     new JEDatabaseSessionMemoryDataStore((JEDatabase)dataStore, bioObjectConfiguration, trackToSourceFeature.get(track)) :
                     new JEDatabaseSessionHybridArrayDataStore((JEDatabase)dataStore, bioObjectConfiguration, trackToSourceFeature.get(track));
@@ -3935,11 +3941,9 @@ public class AnnotationEditorService extends HttpServlet {
                 }
             }
             */
-            AbstractDataStore deletedStore = new JEDatabase(getStorageFile(track+"_deleted").getAbsolutePath());
 
             AbstractDataStoreManager.getInstance().addDataStore(track, dataStore);
-
-            AbstractHistoryStore historyStore = new JEHistoryDatabase(getStorageFile(track + "_history").getAbsolutePath(), false, historySize);
+            AbstractDeletedStoreManager.getInstance().addDeletedStore(track, deletedStore);
             AbstractHistoryStoreManager.getInstance().addHistoryStore(track, historyStore);
 
             sessionData = new SessionData(editor, dataStore, deletedStore, historyStore);

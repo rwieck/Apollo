@@ -123,7 +123,8 @@ private String generateFeatureRecordJSON(AbstractSingleLocationBioFeature featur
         track.getSourceFeature().getUniqueName(), left, right, feature.getName());
     builder+=String.format("'%s',", feature.getType().split(":")[1]);
     builder+=String.format("'%s',", feature.getTimeLastModified());
-    builder+=String.format("'%s',", ((historyDataStore==null)  ? "here" : ((t!=null) ? t.getEditor():"null")));
+    builder+=String.format("'%s',", ((historyDataStore==null)  ? "DELETED" : ((t!=null) ? t.getOperation():"ADD_FEATURE")));
+    builder+=String.format("'%s',", ((historyDataStore==null)  ? "unknown" : ((t!=null) ?  t.getEditor():feature.getOwner().getOwner())));
     builder+=String.format("'%s']", feature.getOwner().getOwner());
     return builder;
 }
@@ -138,16 +139,14 @@ private ArrayList<String> generateFeatureRecord(AbstractSingleLocationBioFeature
 */
 private void generateFeatureRecordHelper(ArrayList<String> builder, AbstractSingleLocationBioFeature feature, ServerConfiguration.TrackConfiguration track, JEHistoryDatabase historyDataStore) {
     String type=feature.getType().split(":")[1];
-    //if(feature.getChildren().size()>1) {
-    if(type.equals("gene")) {
+
+    builder.add(generateFeatureRecordJSON(feature,track, historyDataStore));
+    if(type.equals("gene") || type.equals("pseudogene")) {
         for (AbstractSingleLocationBioFeature subfeature : feature.getChildren()) {
             generateFeatureRecordHelper(builder,subfeature, track, historyDataStore);
         }
     
     }
-    //}
-    
-    builder.add(generateFeatureRecordJSON(feature,track, historyDataStore));
 }
 
 %>
@@ -233,6 +232,7 @@ $(function() {
             { sTitle: "Feature name", bSortable:true },
             { sTitle: "Feature type", bSortable:true },
             { sTitle: "Last modified", bSortable:true },
+            { sTitle: "Operation", bSortable:true },
             { sTitle: "Editor", bSortable:true },
             { sTitle: "Owner", bSortable:true }
         ]

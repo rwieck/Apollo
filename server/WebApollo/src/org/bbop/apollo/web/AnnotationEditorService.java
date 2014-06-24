@@ -1087,6 +1087,11 @@ public class AnnotationEditorService extends HttpServlet {
                 if (feature instanceof Transcript) {
                     Transcript transcript = (Transcript)feature;
                     Gene gene = transcript.getGene();
+
+                    //save to deleted features store before removing transcript
+                    if(deletedStore != null) {
+                        deletedStore.writeFeature(transcript);
+                    }
                     editor.deleteTranscript(transcript.getGene(), transcript);
                     if (gene.getTranscripts().size() == 0) {
                         editor.deleteFeature(gene);

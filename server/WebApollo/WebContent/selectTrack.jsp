@@ -121,25 +121,10 @@ if (username != null) {
             isAdmin = true;
         }
         if ((permission & Permission.READ) == Permission.READ) {
-            out.println("var track = new Array();");
-            out.println("tracks.push(track);");
-            out.println(String.format("track.push('<input type=\"checkbox\" class=\"track_select\" id=\"%s\"/>');", track.getName()));
-            out.println(String.format("track.push('%s');", track.getOrganism()));
-            out.println(String.format("track.push('<a target=\"_blank\" href=\"jbrowse/?loc=%s\">%s</a>');", track.getSourceFeature().getUniqueName(), track.getSourceFeature().getUniqueName()));
-            out.println(String.format("track.push(%d);", track.getSourceFeature().getSequenceLength()));
-            /*
-            String dataAdapters = "<select><option value='none'>Select adapter</option>";
-            String button = "";
-            for (DataAdapterConfiguration conf : serverConfig.getDataAdapters()) {
-                if ((Permission.getValueForPermission(conf.getPermission()) & permission) != 0) {
-                    String options = conf.getOptions() != null ? conf.getOptions() : "";
-                    dataAdapters += String.format("<option value='%s'>%s</option>", conf.getKey(), conf.getKey());
-                    button = String.format("<button class='adapter_button' onclick=\\\"write_data('%s', )\\\"></button>", track.getName());
-                }
-            }
-            dataAdapters += "</select>";
-            out.println(String.format("track.push(\"%s%s\");", dataAdapters, button));
-            */
+            out.println(String.format("tracks.push(['<input type=\"checkbox\" class=\"track_select\" id=\"%s\"/>',",track.getName())+
+                    String.format("'%s',",track.getOrganism())+
+                    String.format("'<a target=\"_blank\" href=\"jbrowse/?loc=%s\">%s</a>',", track.getSourceFeature().getUniqueName(), track.getSourceFeature().getUniqueName())+
+                    String.format("%d]);", track.getSourceFeature().getSequenceLength()));
         }
     }
 }

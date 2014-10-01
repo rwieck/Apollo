@@ -1,15 +1,11 @@
 package org.gmod.gbol.bioObject;
 
-import java.sql.Timestamp;
-import java.util.Collection;
-
 import org.gmod.gbol.bioObject.conf.BioObjectConfiguration;
 import org.gmod.gbol.bioObject.util.BioObjectUtil;
-import org.gmod.gbol.simpleObject.CVTerm;
-import org.gmod.gbol.simpleObject.Feature;
-import org.gmod.gbol.simpleObject.FeatureLocation;
-import org.gmod.gbol.simpleObject.FeatureRelationship;
-import org.gmod.gbol.simpleObject.Organism;
+import org.gmod.gbol.simpleObject.*;
+
+import java.sql.Timestamp;
+import java.util.Collection;
 
 /** Wrapper class representing a coding region.
  * 
@@ -287,6 +283,5 @@ public class CDS extends AbstractSingleLocationBioFeature {
             deleteStopCodonReadThrough(stopCodonReadThrough);
         }
     }
-
 
 }

@@ -1,16 +1,16 @@
 package org.gmod.gbol.bioObject;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Iterator;
-
 import org.gmod.gbol.bioObject.conf.BioObjectConfiguration;
 import org.gmod.gbol.bioObject.util.BioObjectUtil;
 import org.gmod.gbol.simpleObject.Feature;
 import org.gmod.gbol.simpleObject.FeatureLocation;
 import org.gmod.gbol.simpleObject.FeatureRelationship;
 import org.gmod.gbol.util.SequenceUtil;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.List;
 
 /**Abstract wrapper class that inherits from Region for Bio objects that have a single location.
  * 
@@ -21,6 +21,7 @@ import org.gmod.gbol.util.SequenceUtil;
 public abstract class AbstractSingleLocationBioFeature extends Region {
 
     private static final long serialVersionUID = 1L;
+
 
     /** Constructor.
      * 
@@ -387,4 +388,13 @@ public abstract class AbstractSingleLocationBioFeature extends Region {
         }
     }
 
+    public List<String> calculateErrors(){
+        List<String> errors = new ArrayList<>();
+
+        if(getLength()%3!=0){
+            errors.add("check CDS:  "+getLength());
+        }
+
+        return errors ;
+    }
 }

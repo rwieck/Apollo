@@ -1,16 +1,13 @@
 package org.gmod.gbol.bioObject;
 
+import org.gmod.gbol.bioObject.conf.BioObjectConfiguration;
+import org.gmod.gbol.bioObject.util.BioObjectUtil;
+import org.gmod.gbol.simpleObject.*;
+
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
-
-import org.gmod.gbol.bioObject.conf.BioObjectConfiguration;
-import org.gmod.gbol.bioObject.util.BioObjectUtil;
-import org.gmod.gbol.simpleObject.CVTerm;
-import org.gmod.gbol.simpleObject.Feature;
-import org.gmod.gbol.simpleObject.FeatureLocation;
-import org.gmod.gbol.simpleObject.FeatureRelationship;
-import org.gmod.gbol.simpleObject.Organism;
+import java.util.List;
 
 /** Wrapper class representing a gene.
  * 
@@ -208,6 +205,13 @@ public class Gene extends AbstractSingleLocationBioFeature {
     }
     
     public String getClassName() {
+
         return BioObjectUtil.stripPackageNameFromClassName(getClass().getName());
+    }
+
+    public List<String> calculateErrors(){
+        List<String> errors = new ArrayList<>();
+
+        return errors ;
     }
 }

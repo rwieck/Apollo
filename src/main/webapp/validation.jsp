@@ -5,6 +5,7 @@
 <%@ page import="org.bbop.apollo.web.user.Permission" %>
 <%@ page import="org.bbop.apollo.web.user.UserManager" %>
 <%@ page import="org.gmod.gbol.bioObject.AbstractSingleLocationBioFeature" %>
+<%@ page import="org.gmod.gbol.bioObject.Transcript" %>
 <%@ page import="org.gmod.gbol.bioObject.conf.BioObjectConfiguration" %>
 <%@ page import="org.gmod.gbol.bioObject.util.BioObjectUtil" %>
 <%@ page import="org.gmod.gbol.simpleObject.Feature" %>
@@ -12,7 +13,6 @@
 <%@ page import="java.io.File" %>
 <%@ page import="java.io.InputStream" %>
 <%@ page import="java.io.InputStreamReader" %>
-<%@ page import="java.net.URL" %>
 <%@ page import="java.util.*" %>
 <%@ page language="java" contentType="text/html; charset=ISO-8859-1"
          pageEncoding="ISO-8859-1" %>
@@ -110,8 +110,15 @@ private String generateFeatureRecordJSON(AbstractSingleLocationBioFeature featur
 
 
     Transaction t=historyDataStore.getCurrentTransactionForFeature(feature.getUniqueName());
-    
-    
+
+    String type = feature.getType().split(":")[1];
+//    String prefix = "";
+//    if(feature instanceof Transcript){
+//        prefix = ((Transcript) feature).getGene().getName();
+//        if(prefix==null) prefix = "unassigned";
+//        prefix += "::";
+//    }
+
     builder+=String.format("['<input type=\"checkbox\" class=\"track_select\" id=\"%s\"/>',", track.getName()+"<=>"+feature.getUniqueName());
     builder+=String.format("'%s',",track.getSourceFeature().getUniqueName());
     if(feature.getName()==null || feature.getName().trim().length()==0){
@@ -122,11 +129,21 @@ private String generateFeatureRecordJSON(AbstractSingleLocationBioFeature featur
         builder+=String.format("'<a target=\"_blank\" href=\"jbrowse/?loc=%s:%d..%d\">%s</a>',",
             track.getSourceFeature().getUniqueName(), left, right, feature.getName());
     }
-    builder+=String.format("'%s',", feature.getType().split(":")[1]);
+
+    builder+=String.format("'%s',", type);
     builder+=String.format("'%s',", feature.getTimeLastModified());
-    builder+=String.format("'%s',", t!=null?t.getEditor():feature.getOwner().getOwner());
+//    builder+=String.format("'%s',", t!=null?t.getEditor():feature.getOwner().getOwner());
     builder+=String.format("'%s',", feature.getOwner().getOwner());
-    builder+=String.format("'%s']", feature.getStatus()==null ? "" : feature.getStatus().getStatus());
+    builder+=String.format("'%s',", feature.getStatus()==null ? "" : feature.getStatus().getStatus());
+
+    System.out.println(feature.getClass());
+
+    String errorString = "";
+    for(String e : feature.calculateErrors()){
+        errorString += e + " " ;
+    }
+
+    builder+=String.format("'%s']", errorString);
     return builder;
 }
 
@@ -137,10 +154,10 @@ private String generateFeatureRecordJSON(AbstractSingleLocationBioFeature featur
 private ArrayList<String> generateFeatureRecord(AbstractSingleLocationBioFeature feature, ServerConfiguration.TrackConfiguration track, JEHistoryDatabase historyDataStore) {
     ArrayList<String> builder=new ArrayList<String>();
 //    String type=feature.getType().split(":")[1];
-//    for (AbstractSingleLocationBioFeature subfeature : feature.getChildren()) {
-//        builder.add(generateFeatureRecordJSON(subfeature,track, historyDataStore));
-//    }
     builder.add(generateFeatureRecordJSON(feature,track, historyDataStore));
+    for (AbstractSingleLocationBioFeature subfeature : feature.getChildren()) {
+        builder.add(generateFeatureRecordJSON(subfeature,track, historyDataStore));
+    }
     return builder;
 }
 
@@ -227,20 +244,16 @@ $(function () {
             {sTitle: "Feature name", bSortable: true},
             {sTitle: "Feature type", bSortable: true},
             {sTitle: "Last modified", bSortable: true},
-            {sTitle: "Editor", bSortable: true},
+            {sTitle: "Owner", bSortable: true},
+//            {sTitle: "Editor", bSortable: true},
             <%
             if(allStatusList.size()>0){
             %>
-            {sTitle: "Owner", bSortable: true},
-            {sTitle: "Status", bSortable: true}
+            {sTitle: "Status", bSortable: true},
             <%
             }
-            else{
             %>
-            {sTitle: "Owner", bSortable: true}
-            <%
-        }
-        %>
+            {sTitle: "Failures"}
 
         ]
     });
@@ -367,7 +380,8 @@ function change_status_selected_items(updated_status) {
         }
     });
 //    }
-};
+}
+;
 
 function delete_selected_items() {
     var trackName = "";
@@ -415,11 +429,13 @@ function delete_selected_items() {
 
 function cleanup_logo() {
     $("#logo").parent().css("padding", "0 0 0 0");
-} ;
+}
+;
 
 function cleanup_user_item() {
     $("#user_item").parent().attr("id", "user_item_menu");
-} ;
+}
+;
 
 function createListener() {
     $.ajax({
@@ -700,14 +716,14 @@ function open_user_manager_dialog() {
 <%--<div id="filter_div">--%>
 <%--<input type="checkbox" id="show_features">Show features</div>--%>
 <%--<input type="checkbox" id="show_subfeatures">Show subfeatures</div>--%>
-    <%--<ul id="filter_menu">--%>
-        <%--<li>Filter--%>
-            <%--<ul>--%>
-                <%--<li><a id="show_all">All</a></li>--%>
-                <%--<li><a id="check_none">None</a></li>--%>
-            <%--</ul>--%>
-        <%--</li>--%>
-    <%--</ul>--%>
+<%--<ul id="filter_menu">--%>
+<%--<li>Filter--%>
+<%--<ul>--%>
+<%--<li><a id="show_all">All</a></li>--%>
+<%--<li><a id="check_none">None</a></li>--%>
+<%--</ul>--%>
+<%--</li>--%>
+<%--</ul>--%>
 <%--</div>--%>
 <div id="search_sequences_dialog" title="Search sequences" style="display: none"></div>
 <!--

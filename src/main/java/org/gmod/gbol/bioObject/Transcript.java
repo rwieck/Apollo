@@ -645,4 +645,14 @@ public class Transcript extends AbstractSingleLocationBioFeature {
         return true;
     }
 
+    public List<String> calculateErrors(){
+        List<String> errors = new ArrayList<>();
+
+        CDS cds = getCDS();
+        errors.addAll(cds.calculateErrors());
+
+
+        return errors ;
+    }
+
 }

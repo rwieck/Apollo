@@ -136,8 +136,6 @@ private String generateFeatureRecordJSON(AbstractSingleLocationBioFeature featur
     builder+=String.format("'%s',", feature.getOwner().getOwner());
     builder+=String.format("'%s',", feature.getStatus()==null ? "" : feature.getStatus().getStatus());
 
-    System.out.println(feature.getClass());
-
     String errorString = "";
     for(String e : feature.calculateErrors()){
         errorString += e + " " ;

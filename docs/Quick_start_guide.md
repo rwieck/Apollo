@@ -36,8 +36,14 @@ More details about the postgres setup is in the [database setup](Database_setup.
 
 #### Download webapollo
 
-You can download the latest Web Apollo release from [github](https://github.com/gmod/Apollo.git) or from
+You can download the latest Web Apollo release from [GitHub](https://github.com/gmod/Apollo.git) or from
 [genomearchitect.org](http://genomearchitect.org) (the 1.x release branch is not available from genomearchitect yet).
+
+Example:
+
+    # clone the latest webapollo from GitHub and use the latest release tag
+    git clone https://github.com/GMOD/Apollo.git
+    git checkout 1.0.3
 
 
 #### Get prerequisites
@@ -51,31 +57,40 @@ Then get some system pre-requisites. These commands will try to get everything i
     # install system prerequisites (macOSX/homebrew), read the postgresql start guide
     brew install maven postgresql wget tomcat git
 
+
+See [prerequisites](Prerequisites.md) for more details on the pre-requisites if you think something isn't working with these.
+
 #### Kickstart postgres (not needed for ubuntu)
 
 On debian/ubuntu, postgres is started and added to OS boot automatically, but on other systems (centOS/redhat, mac OSX) they need to be kickstarted. 
 
-    # on centOS/redhat, manually kickstart postgres and make it start on OS boot with chkconfig
+    # on centOS/redhat, manually kickstart postgres and make sure to add remote password-based md5 authentication
     sudo su -c "PGSETUP_INITDB_OPTIONS='--auth-host=md5' postgresql-setup initdb"
     sudo su -c "service postgresql start"
     sudo su -c "chkconfig postgresql on"
 
-    # on macOSX/homebrew, manually kickstart postgres and make it start on OS boot with launchctl
+    # on macOSX/homebrew, manually kickstart postgres using launchctl (see homebrew guide for details)
     ln -sfv /usr/local/opt/postgresql/*.plist ~/Library/LaunchAgents
     launchctl load ~/Library/LaunchAgents/homebrew.mxcl.postgresql.plist
 
+
+For more details on setting up postgres in CentOS, refer to https://wiki.postgresql.org/wiki/YUM_Installation (but note that we encourage using host-based password authentication with --auth-host=md5)
+
+For more details on setting up postgres in homebrew refer to https://wiki.postgresql.org/wiki/Homebrew
+
 #### Initialize postgres database
 
-After starting postgres, you can create a new user and database for Web Apollo authentication.
+After starting postgres, you can create a new database for managing login and track information.
 
-    # On debian/ubuntu/redhat/centOS,requires postgres user to execute command, hence "sudo su postgres"
+    # On debian/ubuntu/redhat/centOS, typically requires "postgres" user to execute commands
     sudo su - postgres -c "createuser -RDIElPS $PGUSER"
     sudo su - postgres -c "createdb -E UTF-8 -O $PGUSER $WEBAPOLLO_DATABASE"
-    # macOSX/homebrew, may not necessary to createuser if using `whoami` for PGUSER
+
+    # On macOSX/homebrew there is no need login as the postgres user
     createuser -RDIElPS $PGUSER
     createdb -E UTF-8 -O $PGUSER $WEBAPOLLO_DATABASE
 
-Note: see [database setup](Database_setup.md#authentication) for more details about postgres setup.
+Note: see [database setup](Database_setup.md#authentication) for more details about the database setup.
  
 #### Download sample data
 
@@ -90,6 +105,8 @@ We will use the `apollo deploy` script to initialize jbrowse and install some ba
 
     cp sample_config.properties config.properties
     cp sample_config.xml config.xml
+    cp sample_log4j2.json log4j2.json
+    cp sample_canned_comments.xml canned_comments.xml
     ./apollo deploy
 
 If there are any errors during this build step, you can check setup.log. See the [troubleshooting guide](Troubleshooting.md) for common issues.
